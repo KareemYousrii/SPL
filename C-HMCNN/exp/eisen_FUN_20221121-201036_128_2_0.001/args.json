@@ -1,0 +1,1 @@
+{"dataset": "eisen_FUN", "seed": 0, "device": "0", "emb_size": 128, "batch_size": 128, "lr": 0.001, "wd": 1e-05, "n_epochs": 200, "output": "exp", "exp_id": null, "no_constraints": false, "gates": 2, "S": 4, "num_reps": 4}

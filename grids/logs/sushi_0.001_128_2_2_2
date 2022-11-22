@@ -1,0 +1,22 @@
+[('linear1', Linear(in_features=50, out_features=128, bias=True)), ('relu1', ReLU()), ('linear2', Linear(in_features=128, out_features=128, bias=True)), ('relu2', ReLU())]
+iter:0, loss:3.178523540496826
+iter:1, loss:3.1554970741271973
+iter:2, loss:3.1323158740997314
+iter:3, loss:3.1084866523742676
+iter:4, loss:3.083221912384033
+iter:5, loss:3.056614398956299
+After 5 iterations
+Percentage of validation that are exactly right: 15.939087
+Saving new best model
+Traceback (most recent call last):
+  File "/scratch/ahmedk/neurips22_semprola/semprola-repo/semprola/grids_bak/sushi_net.py", line 191, in <module>
+    main()
+  File "/scratch/ahmedk/neurips22_semprola/semprola-repo/semprola/grids_bak/sushi_net.py", line 141, in main
+    torch.save({
+  File "/space/ahmedk/anaconda3/envs/semprola/lib/python3.9/site-packages/torch/serialization.py", line 376, in save
+    with _open_file_like(f, 'wb') as opened_file:
+  File "/space/ahmedk/anaconda3/envs/semprola/lib/python3.9/site-packages/torch/serialization.py", line 230, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+  File "/space/ahmedk/anaconda3/envs/semprola/lib/python3.9/site-packages/torch/serialization.py", line 211, in __init__
+    super(_open_file, self).__init__(open(name, mode))
+FileNotFoundError: [Errno 2] No such file or directory: 'saved_models/best_model_sushi_0.001_2_2_2_128.pt'
