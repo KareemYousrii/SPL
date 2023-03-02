@@ -114,8 +114,8 @@ class CircuitMPE:
     def ff_cross_entropy(self, target, litleaves, log_space=True):
         Z = self.beta.generate_tf_ac(litleaves, log_space)
         ll = self.beta.ff_ll(litleaves, target)
-        ll = (ll + self.beta.mixing).logsumexp(dim=-1)
         ll = ll - Z
+        ll = (ll + self.beta.mixing).logsumexp(dim=-1)
         return -ll
 
     def cross_entropy_psdd(self, target):
