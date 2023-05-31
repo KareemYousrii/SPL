@@ -763,6 +763,7 @@ class NormalizedSddNode(SddNode):
 
         Assumes the SDD is normalized.
         """
+        bsz = litleaves[0][0].size(0)
         for node in self.as_positive_list(clear_data=clear_data):
 
             # Use cache
@@ -771,13 +772,13 @@ class NormalizedSddNode(SddNode):
                 continue
 
             if node.is_false():
-                data = torch.tensor(-300., device=DEVICE)
+                data = torch.full(bsz, -300, device=DEVICE)#torch.tensor(-300., device=DEVICE)
 
             elif node.is_true():
                 # We associate parameters for true literals, normalized
                 # according to the corresponding vtree
                 node.theta = torch.stack([litleaves[node.vtree.var - 1][0], litleaves[node.vtree.var - 1][1]])
-                data = torch.tensor(0.0, device=DEVICE)
+                data = torch.zeros(bsz, device=DEVICE)
 
             elif node.is_literal():
                 if node.literal > 0:
