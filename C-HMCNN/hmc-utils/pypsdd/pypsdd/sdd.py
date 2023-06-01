@@ -768,6 +768,70 @@ class NormalizedSddNode(SddNode):
         data = torch.log(data)
         return data
 
+    import torch
+    def sample(self, batch_size, clear_data=True):
+        """Compute the MPE instation given weights associated with literals.
+
+        Assumes the SDD is normalized.
+        """
+        from torch.distributions.categorical import Categorical
+        for node in self.as_positive_list(clear_data=clear_data):
+
+            if node.data is not None:
+                data = node.data
+                continue
+
+            if node.is_false():
+                # No configuration on false
+                data = torch.tensor([])
+
+            elif node.is_true():
+                sampled_branch = Categorical(probs = node.theta.permute(2, 0, 1)
+                        .exp()).sample().permute(1, 0) #Shape: (batch_size x k)
+                assert(sampled_branch.shape[0] == batch_size)
+
+                data = torch.where(sampled_branch > 0, torch.tensor(node.vtree.var, device=DEVICE), torch.tensor(-node.vtree.var, device=DEVICE))
+                data = data.unsqueeze(dim=-2)
+                assert(len(data.shape) == 3 and data.shape[0] == len(node.theta) and data.shape[1] == 1)
+
+            elif node.is_literal():
+                data = torch.full((batch_size, 1, self.num_reps), node.literal, device=DEVICE)
+
+            elif node.is_mixing():
+                sampled_branch = Categorical(probs = node.theta.permute(2, 0, 1)
+                        .exp()).sample().permute(1, 0) #Shape: (batch_size x k)
+                assert(sampled_branch.shape[0] == batch_size)
+
+                data = torch.tensor([], device=DEVICE)
+                for element in node.elements:
+                    data = torch.cat((data, element.data.unsqueeze(0)), dim=0)
+
+                sampled_branch = sampled_branch.unsqueeze(dim=-2).expand((1, *data.shape[1:]))
+                data = torch.gather(data, 0, sampled_branch).squeeze(dim=0)
+                assert(len(data.shape) == 3)
+
+            else: # node is_decomposition()
+
+                sampled_branch = Categorical(probs = node.theta.permute(2, 0, 1)
+                        .exp()).sample().permute(1, 0) #Shape: (batch_size x k)
+                assert(sampled_branch.shape[0] == batch_size)
+
+                data = torch.tensor([], device=DEVICE)
+                for p, s in node.positive_elements:
+                    a = torch.cat((p.data, s.data), dim=-2).unsqueeze(dim=0)
+                    data = torch.cat((data, a), dim=0)
+
+                sampled_branch = sampled_branch.unsqueeze(dim=-2).expand((1, *data.shape[1:]))
+                data = torch.gather(data, 0, sampled_branch).squeeze(dim=0)
+                assert(len(data.shape) == 3)
+
+            node.data = data
+
+        # Need to put the literals in ascending order,
+        # sorting by the absolute value of the literal
+        indices = data.abs().argsort(dim=-2)
+        return data.gather(1, indices)
+
 ########################################
 # End Determinstic and SD PCs
 ########################################
