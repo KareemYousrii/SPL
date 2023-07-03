@@ -836,28 +836,31 @@ class NormalizedSddNode(SddNode):
     def mars(self, clear_data=True,do_bottom_up=True):
         """Evaluate a PSDD top-down for its marginals."""
 
-        var_marginals = torch.full(((2*self.vtree.var_count+1), *self.theta.transpose(0,1).shape[1:]), -float('inf'), device=DEVICE)#[ 0.0 ] * (2*self.vtree.var_count+1)
+        var_marginals = [None] * (2 * self.vtree.var_count + 1)
+        for i in range(0, 2*self.vtree.var_count + 1):
+            var_marginals[i] = torch.full((self.theta.transpose(0,1).shape[1:]), -float(300), device=DEVICE, requires_grad=True)
+
         if self.is_false_sdd: return var_marginals
 
         for node in self.as_positive_list(clear_data=False): # init field
-            node.pr_context = torch.tensor(-float('inf'), device=DEVICE)#0.0
+            node.pr_context = torch.tensor(-float(300), device=DEVICE)#0.0
 
         self.pr_context = torch.tensor(0.0, device=DEVICE)
         for node in self.as_positive_list(reverse=True,clear_data=clear_data):
 
             if node.is_literal():
                 var = node.vtree.var
-                var_marginals[ var] = logaddexp(var_marginals[var], torch.tensor(0.0, device=DEVICE) + node.pr_context)
-                var_marginals[-var] = logaddexp(var_marginals[-var], torch.tensor(-float('inf'), device=DEVICE) + node.pr_context)
+                var_marginals[ var] = torch.logaddexp(var_marginals[var], torch.tensor(0.0, device=DEVICE) + node.pr_context)
+                var_marginals[-var] = torch.logaddexp(var_marginals[-var], torch.tensor(-float(300), device=DEVICE) + node.pr_context)
 
             elif node.is_true():
                 node.theta = node.theta.transpose(0, 1) #(children x batch_size x k)
 
                 var = node.vtree.var
-                var_marginals[ var] = logaddexp(var_marginals[var], node.theta[1] + node.pr_context)
-                var_marginals[-var] = logaddexp(var_marginals[-var], node.theta[0] + node.pr_context)
+                var_marginals[ var] = torch.logaddexp(var_marginals[var], node.theta[1] + node.pr_context)
+                var_marginals[-var] = torch.logaddexp(var_marginals[-var], node.theta[0] + node.pr_context)
 
-            elif node.is_mixing(): 
+            elif node.is_mixing():
                 node.theta = node.theta.transpose(0, 1)
 
                 for i, d in enumerate(node.elements):
@@ -867,11 +870,11 @@ class NormalizedSddNode(SddNode):
                 node.theta = node.theta.transpose(0, 1) #(children x batch_size x k)
                 for i, (p,s) in enumerate(node.positive_elements):
                     theta = node.theta[i]
-                    p.pr_context = logaddexp(p.pr_context, theta + node.pr_context)
-                    s.pr_context = logaddexp(s.pr_context, theta + node.pr_context)
-            node.pr_node = node.pr_context 
+                    p.pr_context = torch.logaddexp(p.pr_context, theta + node.pr_context)
+                    s.pr_context = torch.logaddexp(s.pr_context, theta + node.pr_context)
+            node.pr_node = node.pr_context
 
-        return (self.mixing + var_marginals).logsumexp(-1)
+        return torch.logsumexp(self.mixing + torch.stack(var_marginals), dim=-1)
 
 ########################################
 # End Determinstic and SD PCs
