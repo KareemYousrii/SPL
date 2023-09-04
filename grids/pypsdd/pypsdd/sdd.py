@@ -662,7 +662,7 @@ class NormalizedSddNode(SddNode):
                 data = torch.tensor([], device=DEVICE, dtype=tint)
 
             elif node.is_true():
-                data = torch.where(node.theta.argmax(dim=-2) > 0, torch.tensor(node.vtree.var, device=DEVICE, dtype=tint), torch.tensor(-node.vtree.var, device=DEVICE, dtype=tint))
+                data = torch.where(node.theta.argmax(dim=0) > 0, torch.tensor(node.vtree.var, device=DEVICE, dtype=tint), torch.tensor(-node.vtree.var, device=DEVICE, dtype=tint))
                 data = data.unsqueeze(dim=-2)
                 #assert(len(data.shape) == 3 and data.shape[0] == len(node.theta) and data.shape[1] == 1)
 
@@ -778,7 +778,7 @@ class NormalizedSddNode(SddNode):
                 # We associate parameters for true literals, normalized
                 # according to the corresponding vtree
                 node.theta = torch.stack([litleaves[node.vtree.var - 1][0], litleaves[node.vtree.var - 1][1]])
-                data = torch.zeros(bsz, device=DEVICE)
+                data = torch.zeros((bsz, self.num_reps), device=DEVICE)
 
             elif node.is_literal():
                 if node.literal > 0:
@@ -1025,7 +1025,7 @@ class NormalizedSddNode(SddNode):
                 data = torch.tensor(0.0 if not log_space else -300., device=DEVICE)
 
             elif node.is_true():
-                data = torch.tensor(1.0 if not log_space else 0., device=DEVICE)
+                data = torch.full((litleaves[0][0].size(0), self.num_reps), 1.0 if not log_space else 0., device=DEVICE)
 
             elif node.is_literal():
                 if node.literal > 0:
